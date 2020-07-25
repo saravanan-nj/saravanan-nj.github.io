@@ -125,7 +125,7 @@ Redis </p>
 <p>Redis is an open source (BSD licensed), in-memory data structure store, used as a database, cache and message broker. It supports data structures such as strings, hashes, lists, sets, sorted sets with range queries, bitmaps, hyperloglogs, geospatial indexes with radius queries and streams.</p>
 </blockquote>
 <p>Redis supports sharding data based on keys, It supports datatypes hashes, sortedset. One important feature that made me interested is the ability to read the members in sorted set using the command <em>ZRANGEBYLEX</em> </p>
-<h3>How can i implement this</h3>
+<h3>How to implement this</h3>
 <p>My first thought about how to store the documents was simple. It was create to a value using partition key, sort key and a json dump which had other fields from the document and store it in a sorted set with score as 0, so all i have to do now is to use ZRANGEBYLEX to provide the querying capabilities that i mentioned above.</p>
 <p>For example, In a table <em>movies</em>, if the document that needed to be stored is</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
