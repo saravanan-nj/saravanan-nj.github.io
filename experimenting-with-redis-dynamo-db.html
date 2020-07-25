@@ -111,14 +111,13 @@
 </blockquote>
 <p>Few facts about Dynamo DB</p>
 <ol>
-<li>Data is stored as collection of documents in tables.</li>
-<li>Documents are stored across the nodes in the cluster. Partition key value is used to determine, in which node the document should be stored.</li>
-<li>Each document can also a sort key which will be used to store the documents in sorted order based on the value of that key.</li>
-<li>Data can queried only by using partition key.</li>
+<li>Data are stored as collection of documents in tables.</li>
+<li>Documents are stored across the nodes in a cluster. Partition key's value is used to determine the node, in which the document has to be stored.</li>
+<li>Each document can also have a sort key which can be used to store the documents in sorted order based on the value of that key.</li>
+<li>Data cannot be queried without knowing the value of partition key in the document.</li>
 <li>Data can also be queried by using combination of partition key and sort key.</li>
-<li>Combination of partition key and sort key needs to be unique across documents.</li>
+<li>Combination of partition key and sort key needs to be unique.</li>
 </ol>
-<p><em>Insert Help Document</em></p>
 <p>The above mentioned facts about Dynamo DB, made me think about an experiment - <strong>Can I build something that mimics these using Redis</strong>
 Redis </p>
 <p>About Redis from redis.io</p>
