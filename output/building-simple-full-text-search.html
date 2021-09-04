@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en" prefix="og: http://ogp.me/ns#">
+	<head>
+		<link href="http://gmpg.org/xfn/11" rel="profile">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+		<!-- Metadata -->
+	<meta name="description" content="">
+	<meta property="og:description" content="">
+	<meta property="og:title" content="Building Simple Full Text Search" />
+	<meta property="og:type" content="article" />
+	<meta property="og:url" content="/building-simple-full-text-search.html" />
+		<meta property="og:image" content="/images/" />
+
+		<!-- Enable responsiveness on mobile devices-->
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+		<title>Saravanan's Blog</title>
+
+		<!-- CSS -->
+		<link href="//fonts.googleapis.com/" rel="dns-prefetch">
+		<link href="//fonts.googleapis.com/css?family=Droid+Serif:400,700,400italic|Abril+Fatface|PT+Sans:400,400italic,700&amp;subset=latin,latin-ext" rel="stylesheet">
+
+		<link rel="stylesheet" href="/theme/css/poole.css" />
+		<link rel="stylesheet" href="/theme/css/hyde.css" />
+		<link rel="stylesheet" href="/theme/css/syntax.css" />
+			<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fork-awesome@1.1.7/css/fork-awesome.min.css" crossorigin="anonymous">
+
+		<!-- Feeds -->
+
+		<!-- Analytics -->
+<!-- Matomo -->
+<script>
+  var _paq = window._paq = window._paq || [];
+  /* tracker methods like "setCustomDimension" should be called before "trackPageView" */
+  _paq.push(['trackPageView']);
+  _paq.push(['enableLinkTracking']);
+  (function() {
+    var u="https://www.saravanannj.tech/_analytics/";
+    _paq.push(['setTrackerUrl', u+'matomo.php']);
+    _paq.push(['setSiteId', '1']);
+    var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0];
+    g.async=true; g.src=u+'matomo.js'; s.parentNode.insertBefore(g,s);
+  })();
+</script>
+<!-- End Matomo Code -->
+	</head>
+
+	<body class="theme-base-theme-base-0d">
+<div class="sidebar">
+	<div class="container sidebar-sticky">
+		<div class="sidebar-about">
+
+			<h2>
+				<a href="/">
+					Saravanan's Blog
+				</a>
+			</h2>
+			<p class="lead"></p>
+			<p class="lead"> </p>
+			<p></p>
+		</div>
+			<ul class="sidebar-nav">
+			</ul>
+		<nav class="sidebar-social">
+					<a class="sidebar-social-item" href="https://in.linkedin.com/in/saravanan-n-b2a04a82" target="_blank">
+						<i class="fa fa-linkedin"></i>
+					</a>
+					<a class="sidebar-social-item" href="mailto:saravanan.n.nj@gmail.com">
+						<i class="fa fa-envelope"></i>
+					</a>
+					<a class="sidebar-social-item" href="https://github.com/saravanan-nj" target="_blank">
+						<i class="fa fa-github"></i>
+					</a>
+			<a class="sidebar-social-item" href="/">
+				<i class="fa fa-rss"></i>
+			</a>
+		</nav>
+	</div>
+</div>		<div class="content container">
+<div class="post">
+	<h1 class="post-title">Building Simple Full Text Search</h1>
+	<span class="post-date">Wed 30 September 2020</span>
+	<h3>Full Text Search</h3>
+<p>Full Text Search refers to technique of searching text across stored documents and obtaining matched results in order of the search score. When a user searches for a word or set of words across documents, the search engine has to fetch all the documents that contains one or more occurences of those search terms and return those results after scoring them according to certain criteria. One such technique is tfidf.</p>
+<h3>TF-IDF</h3>
+<p>TF-IDF is short for term frequency–inverse document frequency. In this method, the scoring of the result document is done by using term frequency and inverted document frequency. Term frequency refers to the number of occurences of search terms in the document. Inverted document frequency refers to the inverse of the number of documents that has the occurence of that search term.</p>
+<p>Lets try to create such an engine using python. For this we can use the bbc news data corpus. </p>
+<p>To search across documents first, we need to create an inverted index using those documents. Inverted index can be thought of as hash map with words as keys and list of documents that has those words as values.</p>
+<h3>Building inverted index python</h3>
+<p>The corpus consists of set of directories (per news category), inside the directory, we have text files. For this purpose, we can use text files from politics. We will break the text inside those files into sentences and then break them into individual words. Instead of using the words, we are using the lower cased lemma (after stemming) of those words for indexing. For this purpose, we use spacy (nlp python library).</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">import</span> <span class="nn">spacy</span>
+
+
+<span class="n">nlp</span> <span class="o">=</span> <span class="n">spacy</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;en_core_web_sm&quot;</span><span class="p">)</span>
+<span class="n">index</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="n">documents</span> <span class="o">=</span> <span class="p">{}</span>
+
+
+<span class="k">def</span> <span class="nf">index_file</span><span class="p">(</span><span class="n">file_</span><span class="p">):</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">file_</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+    <span class="n">file_id</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">file_</span><span class="p">)</span><span class="o">.</span><span class="n">stem</span>
+    <span class="n">documents</span><span class="p">[</span><span class="n">file_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span>
+    <span class="n">words</span> <span class="o">=</span> <span class="n">parse_text</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="n">index_words</span><span class="p">(</span><span class="n">file_id</span><span class="p">,</span> <span class="n">words</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">parse_text</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+    <span class="n">parsed_text</span> <span class="o">=</span> <span class="n">nlp</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="n">words</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">parsed_text</span><span class="p">:</span>
+        <span class="n">words</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">word</span><span class="o">.</span><span class="n">lemma_</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
+    <span class="k">return</span> <span class="n">words</span>
+
+
+<span class="k">def</span> <span class="nf">index_words</span><span class="p">(</span><span class="n">file_id</span><span class="p">,</span> <span class="n">words</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">words</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">index</span><span class="p">[</span><span class="n">word</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">file_id</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>    
+            <span class="n">index</span><span class="p">[</span><span class="n">word</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">file_id</span><span class="p">]</span>
+</code></pre></div>
+
+
+<p>Now to search, all we have to get the search terms from user and use the inverted index to find the documents that contains them. </p>
+<p>Let's slightly modify the function <code>index_words</code> so that we can also have reference to both the document and count. Using this, the term frequency required for tf-idf can be calculated. For Inverted document frequency, we can using the inverse of the length of value in the dictionary.</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">index_words</span><span class="p">(</span><span class="n">file_id</span><span class="p">,</span> <span class="n">words</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">words</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">current_count</span> <span class="o">=</span> <span class="n">index</span><span class="p">[</span><span class="n">word</span><span class="p">][</span><span class="n">file_id</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>    
+            <span class="n">current_count</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">index</span><span class="p">[</span><span class="n">word</span><span class="p">][</span><span class="n">file_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">current_count</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>    
+            <span class="n">index</span><span class="p">[</span><span class="n">word</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="n">file_id</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span>
+</code></pre></div>
+
+
+<p>Now lets build a simple function which can obtain documents for search terms and calculates the tf-idf score and returns those documents in the descending order (max score first) of tf-idf score.</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">search</span><span class="p">(</span><span class="n">words</span><span class="p">):</span>
+    <span class="n">docs</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">words</span><span class="p">:</span>
+        <span class="n">file_ids</span> <span class="o">=</span> <span class="n">index</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">word</span><span class="p">,</span> <span class="p">[])</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+        <span class="n">num_of_docs</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">documents</span><span class="p">)</span>
+        <span class="n">docs_with_word</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">file_ids</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">file_id</span><span class="p">,</span> <span class="n">count</span> <span class="ow">in</span> <span class="n">docs_</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">score</span> <span class="o">=</span> <span class="n">count</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">num_of_docs</span> <span class="o">/</span> <span class="n">docs_with_word</span><span class="p">)</span>
+            <span class="n">doc_</span> <span class="o">=</span> <span class="n">documents</span><span class="p">[</span><span class="n">file_id</span><span class="p">]</span>
+            <span class="n">docs</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">score</span><span class="p">,</span> <span class="n">doc_</span><span class="p">))</span>
+    <span class="n">docs</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">docs</span>
+</code></pre></div>
+
+
+<p>We can enhance this further by storing the documents and inverted index in redis and doing the search using datastructures in redis. We can use hash map data structure for this purpose.</p>
+<p>Let's create functions to create, delete documents which will store the documents and create / update the inverted index.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">import</span> <span class="nn">spacy</span>
+<span class="kn">import</span> <span class="nn">redis</span>
+
+
+<span class="n">nlp</span> <span class="o">=</span> <span class="n">spacy</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;en_core_web_sm&quot;</span><span class="p">)</span>
+<span class="n">redis_client</span> <span class="o">=</span> <span class="n">redis</span><span class="o">.</span><span class="n">Redis</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="s2">&quot;172.20.0.2&quot;</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">6379</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">parse_text</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+    <span class="n">parsed_text</span> <span class="o">=</span> <span class="n">nlp</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="n">words</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">parsed_text</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">any</span><span class="p">((</span><span class="n">filter_</span><span class="p">(</span><span class="n">word</span><span class="p">)</span> <span class="k">for</span> <span class="n">filter_</span> <span class="ow">in</span> <span class="n">filters</span><span class="p">)):</span>
+            <span class="n">words</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">word</span><span class="o">.</span><span class="n">lemma_</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
+    <span class="k">return</span> <span class="n">words</span>
+
+
+<span class="k">def</span> <span class="nf">index_words</span><span class="p">(</span><span class="n">index_name</span><span class="p">,</span> <span class="n">file_id</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">words</span><span class="p">):</span>
+    <span class="n">redis_client</span><span class="o">.</span><span class="n">hset</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;__</span><span class="si">{</span><span class="n">index_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">file_id</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">words</span><span class="p">:</span>
+        <span class="n">hash_key</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">index_name</span><span class="si">}</span><span class="s2">::</span><span class="si">{</span><span class="n">word</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="n">redis_client</span><span class="o">.</span><span class="n">hincrby</span><span class="p">(</span><span class="n">hash_key</span><span class="p">,</span> <span class="n">file_id</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">index_file</span><span class="p">(</span><span class="n">index_name</span><span class="p">,</span> <span class="n">file_</span><span class="p">):</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">file_</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+    <span class="n">file_id</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">file_</span><span class="p">)</span><span class="o">.</span><span class="n">stem</span>
+    <span class="n">words</span> <span class="o">=</span> <span class="n">parse_text</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="n">index_words</span><span class="p">(</span><span class="n">index_name</span><span class="p">,</span> <span class="n">file_id</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">words</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">remove_file</span><span class="p">(</span><span class="n">index_name</span><span class="p">,</span> <span class="n">file_</span><span class="p">):</span>
+    <span class="n">file_id</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">file_</span><span class="p">)</span><span class="o">.</span><span class="n">stem</span>
+    <span class="n">doc</span> <span class="o">=</span> <span class="n">redis_client</span><span class="o">.</span><span class="n">hget</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;__</span><span class="si">{</span><span class="n">index_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">file_id</span><span class="p">)</span>
+    <span class="n">doc</span> <span class="o">=</span> <span class="n">doc</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span>
+    <span class="n">words</span> <span class="o">=</span> <span class="n">parsed_text</span><span class="p">(</span><span class="n">doc</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">words</span><span class="p">:</span>
+        <span class="n">hash_key</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">index_name</span><span class="si">}</span><span class="s2">::</span><span class="si">{</span><span class="n">word</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="n">redis_client</span><span class="o">.</span><span class="n">hdel</span><span class="p">(</span><span class="n">hash_key</span><span class="p">,</span> <span class="n">file_id</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">update_file</span><span class="p">(</span><span class="n">index_name</span><span class="p">,</span> <span class="n">file_</span><span class="p">):</span>
+    <span class="n">remove_file</span><span class="p">(</span><span class="n">index_name</span><span class="p">,</span> <span class="n">file_</span><span class="p">)</span>
+    <span class="n">index_file</span><span class="p">(</span><span class="n">index_name</span><span class="p">,</span> <span class="n">file_</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</code></pre></div>
+
+
+<p>Now we can modify the above mentioned function to search for the documents stored id redis. all we have to do is to modify the function to do search in redis.</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">search</span><span class="p">(</span><span class="n">index_name</span><span class="p">,</span> <span class="n">words</span><span class="p">):</span>
+    <span class="n">docs</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">words</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">index_name</span><span class="si">}</span><span class="s2">::</span><span class="si">{</span><span class="n">word</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">words</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">words</span><span class="p">:</span>
+        <span class="n">docs_</span> <span class="o">=</span> <span class="n">redis_client</span><span class="o">.</span><span class="n">hgetall</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
+        <span class="n">num_of_docs</span> <span class="o">=</span> <span class="n">redis_client</span><span class="o">.</span><span class="n">hlen</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;__</span><span class="si">{</span><span class="n">index_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">docs_with_word</span> <span class="o">=</span> <span class="n">redis_client</span><span class="o">.</span><span class="n">hlen</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">doc_</span><span class="p">,</span> <span class="n">count_</span> <span class="ow">in</span> <span class="n">docs_</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">file_id</span> <span class="o">=</span> <span class="n">doc_</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span>
+            <span class="n">count</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">count_</span><span class="o">.</span><span class="n">decode</span><span class="p">())</span>
+            <span class="n">score</span> <span class="o">=</span> <span class="n">count</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">num_of_docs</span> <span class="o">/</span> <span class="n">docs_with_word</span><span class="p">)</span>
+            <span class="n">doc_</span> <span class="o">=</span> <span class="p">(</span><span class="n">redis_client</span><span class="o">.</span><span class="n">hget</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;__</span><span class="si">{</span><span class="n">index_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">file_id</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(),</span> <span class="n">score</span><span class="p">)</span>
+            <span class="n">docs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">doc_</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">docs</span>
+</code></pre></div>
+
+
+<p>The above implementation is a simple one, but this can be a helpful starting point for building such search engine. 
+This can be further improved by </p>
+<ul>
+<li>Modifying the search function to accept boolean queries (example: "President" OR "Prime Minister"). </li>
+<li>Exploring further on using alternative datastructures for storing the index </li>
+<li>Storing documents and indices in Disk instead of using Redis.</li>
+</ul>
+</div>
+		</div>
+	</body>
+</html>

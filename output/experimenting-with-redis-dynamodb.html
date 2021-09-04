@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en" prefix="og: http://ogp.me/ns#">
+	<head>
+		<link href="http://gmpg.org/xfn/11" rel="profile">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+		<!-- Metadata -->
+	<meta name="description" content="">
+	<meta property="og:description" content="">
+	<meta property="og:title" content="Experimenting with Redis (DynamoDB)" />
+	<meta property="og:type" content="article" />
+	<meta property="og:url" content="/experimenting-with-redis-dynamodb.html" />
+		<meta property="og:image" content="/images/" />
+
+		<!-- Enable responsiveness on mobile devices-->
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+		<title>Saravanan's Blog</title>
+
+		<!-- CSS -->
+		<link href="//fonts.googleapis.com/" rel="dns-prefetch">
+		<link href="//fonts.googleapis.com/css?family=Droid+Serif:400,700,400italic|Abril+Fatface|PT+Sans:400,400italic,700&amp;subset=latin,latin-ext" rel="stylesheet">
+
+		<link rel="stylesheet" href="/theme/css/poole.css" />
+		<link rel="stylesheet" href="/theme/css/hyde.css" />
+		<link rel="stylesheet" href="/theme/css/syntax.css" />
+			<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fork-awesome@1.1.7/css/fork-awesome.min.css" crossorigin="anonymous">
+
+		<!-- Feeds -->
+
+		<!-- Analytics -->
+<!-- Matomo -->
+<script>
+  var _paq = window._paq = window._paq || [];
+  /* tracker methods like "setCustomDimension" should be called before "trackPageView" */
+  _paq.push(['trackPageView']);
+  _paq.push(['enableLinkTracking']);
+  (function() {
+    var u="https://www.saravanannj.tech/_analytics/";
+    _paq.push(['setTrackerUrl', u+'matomo.php']);
+    _paq.push(['setSiteId', '1']);
+    var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0];
+    g.async=true; g.src=u+'matomo.js'; s.parentNode.insertBefore(g,s);
+  })();
+</script>
+<!-- End Matomo Code -->
+	</head>
+
+	<body class="theme-base-theme-base-0d">
+<div class="sidebar">
+	<div class="container sidebar-sticky">
+		<div class="sidebar-about">
+
+			<h2>
+				<a href="/">
+					Saravanan's Blog
+				</a>
+			</h2>
+			<p class="lead"></p>
+			<p class="lead"> </p>
+			<p></p>
+		</div>
+			<ul class="sidebar-nav">
+			</ul>
+		<nav class="sidebar-social">
+					<a class="sidebar-social-item" href="https://in.linkedin.com/in/saravanan-n-b2a04a82" target="_blank">
+						<i class="fa fa-linkedin"></i>
+					</a>
+					<a class="sidebar-social-item" href="mailto:saravanan.n.nj@gmail.com">
+						<i class="fa fa-envelope"></i>
+					</a>
+					<a class="sidebar-social-item" href="https://github.com/saravanan-nj" target="_blank">
+						<i class="fa fa-github"></i>
+					</a>
+			<a class="sidebar-social-item" href="/">
+				<i class="fa fa-rss"></i>
+			</a>
+		</nav>
+	</div>
+</div>		<div class="content container">
+<div class="post">
+	<h1 class="post-title">Experimenting with Redis (DynamoDB)</h1>
+	<span class="post-date">Sat 25 July 2020</span>
+	<h3>Introduction</h3>
+<p>Recently, I have been exploring NoSQL DBs. During that, I came across <em>DynamoDB</em>. </p>
+<p>DynamoDB is a fully managed distributed key-value and document database. </p>
+<p>From AWS Documentation:</p>
+<blockquote>
+<p>Amazon DynamoDB is a key-value and document database that delivers single-digit millisecond performance at any scale. It's a fully managed, multiregion, multimaster, durable database with built-in security, backup and restore, and in-memory caching for internet-scale applications. DynamoDB can handle more than 10 trillion requests per day and can support peaks of more than 20 million requests per second.</p>
+</blockquote>
+<p>In DynamoDB</p>
+<ol>
+<li>Data is stored as a collection of documents in tables.</li>
+<li>Documents are stored across the nodes in a cluster. Partition key's value is used to determine the node, in which the document has to be stored.</li>
+<li>Each document can also have a sort key which can be used to store the documents in sorted order based on the value of that key.</li>
+<li>Data cannot be queried without knowing the value of partition key in the document.</li>
+<li>Data can also be queried by using combination of partition key and sort key.</li>
+<li>Combination of partition key and sort key needs to be unique.</li>
+</ol>
+<p>Let us consider an example of managing movies catalog in DynamoDB to understand the above mentioned facts. The catalog  consists of multiple entries with details about category, title, release year of the movie.</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+  <span class="s2">&quot;category&quot;</span><span class="o">:</span> <span class="s2">&quot;scifi&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;year&quot;</span><span class="o">:</span> <span class="s2">&quot;1999&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;title&quot;</span><span class="o">:</span> <span class="s2">&quot;The Matrix&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+
+
+<p>Our intention is to store and query them based on category and release year. 
+To Achieve that, we might store something similar to the following document in table <code>movies</code>. </p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+  <span class="s2">&quot;partition_key&quot;</span><span class="o">:</span> <span class="s2">&quot;category:scifi&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;sort_key&quot;</span><span class="o">:</span> <span class="s2">&quot;year:1996&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;title&quot;</span><span class="o">:</span> <span class="s2">&quot;The Matrix&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+
+
+<p>To get all the movies that belong to a particular category, we have to query the catalog using the partition key .
+To get all the movies released in a particular year, in a particular category, we can use the combination of sort key and partition key to query the catalog.</p>
+<p>The above mentioned facts about DynamoDB, made me think about an experiment - <strong>Can I build something that mimics these using Redis</strong></p>
+<p>About Redis from redis.io</p>
+<blockquote>
+<p>Redis is an open source (BSD licensed), in-memory data structure store, used as a database, cache and message broker. It supports data structures such as strings, hashes, lists, sets, sorted sets with range queries, bitmaps, hyperloglogs, geospatial indexes with radius queries and streams.</p>
+</blockquote>
+<p>Redis supports sharding data based on keys, It supports data types hashes, sortedset. One important feature that made me interested is the ability to read the members in sorted set using the command <em>ZRANGEBYLEX</em> </p>
+<h3>How to implement this</h3>
+<p>My first thought about how to store the documents was simple. It was create to a value using partition key, sort key and a json dump which had other fields from the document and store it in a sorted set with score as 0, so all I have to do now is to use ZRANGEBYLEX to provide the querying capabilities that I mentioned above.</p>
+<p>For example, In a table <em>movies</em>, if the document that needed to be stored is</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+  <span class="s2">&quot;partition_key&quot;</span><span class="o">:</span> <span class="s2">&quot;category:scifi&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;sort_key&quot;</span><span class="o">:</span> <span class="s2">&quot;year:1999&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;title&quot;</span><span class="o">:</span> <span class="s2">&quot;The Matrix&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+
+
+<p>I can form <code>category:scifi|year:1999|"{\"title\": \"The Matrix\"}"</code> and store it in a sortedset <code>movies</code>.</p>
+<h3>Problem with this approach</h3>
+<p>Storing the data like this can only support range queries. It cannot support get item query using the combination of partition key and sort key, also it cannot support updating / deleting a value by using partition key and sort key.</p>
+<h3>Solving the Get Item and Delete Item</h3>
+<p>I decided to use hash for storing the values, instead of having it as a part of the sort key. 
+When we have to store document, </p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+  <span class="s2">&quot;partition_key&quot;</span><span class="o">:</span> <span class="s2">&quot;category:scifi&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;sort_key&quot;</span><span class="o">:</span> <span class="s2">&quot;year:1999&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;title&quot;</span><span class="o">:</span> <span class="s2">&quot;The Matrix&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+
+
+<p>There will two parts that needs to be stored </p>
+<p><code>category:scifi|year:1999</code> in <code>movies__sortedset</code> sortedset
+<code>"{\"title\": \"The Matrix\"}"</code> in a hash with key <code>category:scifi|year:1999</code> in <code>movies__hashmap</code></p>
+<p>The sorted set can act as an Index to help with range queries.
+The hash table can be used for get, delete queries.</p>
+<h3>Distributing the data according to the partition key</h3>
+<p>Both the value in hashmap and value in the sorted set needs to be present in the same node. For this requirement I decided to use <code>{}</code>. Using these braces, will make redis to consider the values present within these braces for distributing the data among the nodes. </p>
+<p>From redis documentation  - https://redis.io/topics/cluster-spec</p>
+<blockquote>
+<p>If the key contains a "{...}" pattern only the substring between { and } is hashed in order to obtain the hash slot.</p>
+</blockquote>
+<p>Keeping with same example,</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+  <span class="s2">&quot;partition_key&quot;</span><span class="o">:</span> <span class="s2">&quot;category:scifi&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;sort_key&quot;</span><span class="o">:</span> <span class="s2">&quot;year:1999&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;title&quot;</span><span class="o">:</span> <span class="s2">&quot;The Matrix&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+
+
+<p>I decided to have a hash table and sortedset per partition key, so the hash map name will be <code>movies__{&lt;partition_key&gt;}__hashmap</code> and <code>movies__{&lt;partition&gt;}__sortedset</code>.</p>
+<p>Inside those hash table and sortedset I would have stored those values as I mentioned above.</p>
+<h3>Implementation</h3>
+<p>I implemented this using docker (for creating a redis cluster) and python. Using docker-compose, I created a redis cluster (3 masters and 3 slaves),
+then I created another python container, in which I added to the script to implement the read the data and to store the data. I also added support for range queries (query using partition key and sort range).</p>
+<p>Then I used pytest to test positive / success workflows. I don't want to go into details about the test cases that I have written, you can find the code <a href="https://github.com/saravanan-nj/redis_experiement_1">here</a>.</p>
+<p>To test the distribution of partition and sort keys among the nodes, I downloaded IMDB Dataset, in that title dataset had similar structure as mentioned in the above example.  </p>
+<p>Example</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+  <span class="s2">&quot;region&quot;</span><span class="o">:</span> <span class="s2">&quot;US&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;title&quot;</span><span class="o">:</span> <span class="s2">&quot;The Clown and His Dogs&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;titleId&quot;</span><span class="o">:</span> <span class="s2">&quot;tt0000002&quot;</span>
+
+<span class="p">}</span>
+</code></pre></div>
+
+
+<p>In this I used region for partition key and titleId for sort key</p>
+<p>I loaded the first 100k documents from this dataset using a python script - <a href="https://github.com/saravanan-nj/redis_experiement_1">movies client</a> to a table <code>movies</code>. It took around 12 minutes on my machine.</p>
+<p><img alt="alt load movies data" src="/images/July/load_movies.png"></p>
+<p>Then, I used the key command's output in redis nodes to list the keys stored in them. I found that both the hash table values and ordered set values of the same partition key to be in the same master node using key command's output.</p>
+<p><img alt="alt redis keys output" src="/images/July/redis-cli-keys-1.png">
+<img alt="alt redis keys sorted output" src="/images/July/redis-cli-keys-sorted.png"></p>
+<p>To find out about the performance during querying using partition key and sort key. I wrote a script to query the table using partition key (Region) and sort range (Range of titleId)</p>
+<p>The output of getting movie details in US Region ranging from titleId 1 to 10000 in 10 batches (batch size - 1000) took 0.2 seconds</p>
+<p><img alt="alt timing" src="/images/July/get_range_movies.png"></p>
+<p><em>Note: The above is just an indication of the performance of this implementation, it is not for benchmarking against Dynamodb. I never intended this implementation to be benchmarked against DynamoDB</em></p>
+<h2>Conclusion</h2>
+<p>In this, I just verified whether it is possible to build something like dynamodb on top of redis (by me). I never intended this to be an alternative to DynamoDB. This is no way near the capabilities of DynamoDB.  Few things that are not sure about this is 
+1. What will happen if the memory of a node is full. 
+2. Does storing the hash and sortedset has any advantage? </p>
+<p>I just thought it would be an interesting experiment to create such a data store for fun. I have the code <a href="https://github.com/saravanan-nj/redis_experiement_1">here</a>. </p>
+</div>
+		</div>
+	</body>
+</html>
