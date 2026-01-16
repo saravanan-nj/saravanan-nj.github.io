@@ -1,36 +1,73 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>
-        <title>Saravanan's Blog - Raft Consensus Algorithm</title>
-      <meta charset="utf-8" />
-      <meta name="generator" content="Pelican" />
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<html lang="en" prefix="og: http://ogp.me/ns#">
+	<head>
+		<link href="http://gmpg.org/xfn/11" rel="profile">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta http-equiv="content-type" content="text/html; charset=utf-8">
 
+		<!-- Metadata -->
+	<meta name="description" content="">
+	<meta property="og:description" content="">
+	<meta property="og:title" content="Raft Consensus Algorithm" />
+	<meta property="og:type" content="article" />
+	<meta property="og:url" content="/raft-consensus-algorithm.html" />
 
+		<!-- Enable responsiveness on mobile devices-->
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
 
+		<title>Saravanan's Blog</title>
 
+		<!-- CSS -->
+		<link href="//fonts.googleapis.com/" rel="dns-prefetch">
+		<link href="//fonts.googleapis.com/css?family=Droid+Serif:400,700,400italic|Abril+Fatface|PT+Sans:400,400italic,700&amp;subset=latin,latin-ext" rel="stylesheet">
 
-  </head>
+		<link rel="stylesheet" href="/theme/css/poole.css" />
+		<link rel="stylesheet" href="/theme/css/hyde.css" />
+		<link rel="stylesheet" href="/theme/css/syntax.css" />
+			<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fork-awesome@1.1.7/css/fork-awesome.min.css" crossorigin="anonymous">
 
-  <body>
-      <header>
-          <hgroup><h1><a href="/">Saravanan's Blog</a></h1></hgroup>
-          <nav><ul>
-                <li><a href="/category/distributed-systems.html"  aria-current="page" >Distributed Systems</a></li>
-                <li><a href="/category/engineering-manger.html" >Engineering Manger</a></li>
-                <li><a href="/category/experiments.html" >Experiments</a></li>
-                <li><a href="/category/text-search.html" >Text Search</a></li>
-          </ul></nav>
-      </header>
-      <main>
-  <article>
-    <header>
-      <h2>
-        <a href="/raft-consensus-algorithm.html" rel="bookmark"
-           title="Permalink to Raft Consensus Algorithm">Raft Consensus Algorithm</a></h2>
-      
-    </header>
-    <h2>Consensus in Distributed Systems</h2>
+		<!-- Feeds -->
+
+		<!-- Analytics -->
+	</head>
+
+	<body class="theme-base-theme-base-0d">
+<div class="sidebar">
+	<div class="container sidebar-sticky">
+		<div class="sidebar-about">
+
+			<h1>
+				<a href="/">
+					<img class="profile-picture" src="/images/">
+					Saravanan's Blog
+				</a>
+			</h1>
+			<p class="lead"></p>
+			<p class="lead"> </p>
+			<p></p>
+		</div>
+			<ul class="sidebar-nav">
+			</ul>
+		<nav class="sidebar-social">
+					<a class="sidebar-social-item" href="https://in.linkedin.com/in/saravanan-n-b2a04a82" target="_blank">
+						<i class="fa fa-linkedin"></i>
+					</a>
+					<a class="sidebar-social-item" href="mailto:saravanan.n.nj@gmail.com">
+						<i class="fa fa-envelope"></i>
+					</a>
+					<a class="sidebar-social-item" href="https://github.com/saravanan-nj" target="_blank">
+						<i class="fa fa-github"></i>
+					</a>
+			<a class="sidebar-social-item" href="/">
+				<i class="fa fa-rss"></i>
+			</a>
+		</nav>
+	</div>
+</div>		<div class="content container">
+<div class="post">
+	<h1 class="post-title">Raft Consensus Algorithm</h1>
+	<span class="post-date">Sat 28 August 2021</span>
+	<h2>Consensus in Distributed Systems</h2>
 <p>In distributed systems, we will have multiple components running on multiple nodes which can communicate over a network, work together as a single system.
 For this system to be stable and reliable, these components need to talk to each other and need to agree on certain values. For example, in a distributed database,
 When we write data to it, before we save it, we need different nodes on that database to agree on the new data, so that when a read request goes to any of the available nodes, it won't return different data for the same request.</p>
@@ -56,24 +93,9 @@ When we write data to it, before we save it, we need different nodes on that dat
 <p>In this system, I decided to reuse the AppendEntry request for heartbeat. When there is a write request to the leader node, it will send AppendEntry with a message otherwise it will send empty AppendEntry messages to the follower nodes (which can be considered as heartbeat).</p>
 <p>Code is available at <a href="https://github.com/saravanan-nj/raft-experiment.git">Github</a></p>
 <p>We can run a node by running the <code>run.py</code> file. In that file there is a config dictionary, which can be used to mention the gRPC port, http port, data directories and other nodes present in the system.</p>
-    <footer>
-      <p>Published: <time datetime="2021-08-28T00:00:00+05:30">
-        Sat 28 August 2021
-      </time></p>
-        <address>
-          By             <a href="/author/saravanan-n.html">Saravanan N</a>
-        </address>
-        <p>
-          Category: <a href="/category/distributed-systems.html">Distributed Systems</a>
-        </p>
-    </footer>
-  </article>
-      </main>
-      <footer>
-          <address>
-            Proudly powered by <a rel="nofollow" href="https://getpelican.com/">Pelican</a>,
-            which takes great advantage of <a rel="nofollow" href="https://www.python.org/">Python</a>.
-          </address>
-      </footer>
-  </body>
+
+
+</div>
+		</div>
+	</body>
 </html>
